@@ -1,2 +1,10 @@
 README2.md
+README3.md
+Future_Scope.md
+README_Updated.md
+Result_Analysis.md
 .env
+app.log
+*.pyc
+__pycache__/
+*.pkl

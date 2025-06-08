@@ -3,7 +3,6 @@ pandas
 numpy
 scipy
 
-
 # Machine Learning
 scikit-learn
 xgboost
@@ -11,10 +10,6 @@ imbalanced-learn
 shap
 
 # API & Deployment
-fastapi
-uvicorn
-pydantic
-python-multipart
 joblib
 
 # Monitoring & Logging
@@ -29,14 +24,10 @@ plotly
 tqdm
 jupyter
 
-# Testing & Quality
-pytest
-black
-isort
-pylint
-
 # Optional (Uncomment if needed)
-# pyspark       # For large-scale processing
-# mlflow        # Experiment tracking
-# streamlit     # For dashboarding
-# docker        # Containerization
+streamlit     # For dashboarding
+
+# Other
+memory_profiler
+lightgbm
+duckdb
