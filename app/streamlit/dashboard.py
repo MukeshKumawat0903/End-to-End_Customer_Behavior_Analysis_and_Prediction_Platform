@@ -26,6 +26,7 @@ from src.data.load import load_ecommerce_data
 from src.data.preprocess import preprocess_data
 from src.models.train import train_model
 from src.models.evaluate import run_full_evaluation
+from src.schemas import PredictionRequest
 from src.visualization.visualize import (
     evaluate_oof_predictions,
     evaluate_test_set_predictions,
@@ -102,7 +103,7 @@ def main():
             )
 
     # --- Tab Structure ---
-    tab_titles = ["EDA", "Feature Engineering", "Training", "Evaluation", "SHAP", "Download"]
+    tab_titles = ["EDA", "Feature Engineering", "Training", "Evaluation", "SHAP", "Single Prediction", "Download"]
     tabs = st.tabs(tab_titles)
 
     # --- EDA Tab ---
@@ -215,8 +216,13 @@ def main():
             else:
                 st.warning("⚠️ Please train the model first to use SHAP.")
 
-    # --- Download Tab ---
+    # --- Single Prediction Tab ---
     with tabs[5]:
+        st.markdown("### 🎯 Single Customer Prediction")
+        single_prediction_ui()
+
+    # --- Download Tab ---
+    with tabs[6]:
         st.markdown("### ⬇️ Download Model and Artifacts")
         download_btn = st.button("⬇️ Download Model", key="download_btn")
         if download_btn:
@@ -622,6 +628,112 @@ def save_top_features_to_csv():
                           columns=st.session_state.feature_names)
     top_features = shap_df.abs().mean().sort_values(ascending=False).head(10).index
     return shap_df[top_features].to_csv(index=False).encode('utf-8')
+
+
+def single_prediction_ui():
+    """UI for single customer prediction with schema validation"""
+    if st.session_state.get("model", None) is None:
+        st.warning("⚠️ Please train the model first to make predictions.")
+        return
+    
+    st.markdown("### 📝 Enter Customer Details")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        price = st.number_input("💰 Price", min_value=0.1, max_value=100000.0, value=100.0, step=10.0)
+        hour = st.slider("⏰ Hour of Day", min_value=0, max_value=23, value=14)
+        is_weekend = st.checkbox("📅 Is Weekend")
+        total_clicks = st.number_input("🖱️ Total Clicks", min_value=0, max_value=10000, value=10, step=1)
+        avg_session_time = st.number_input("⏱️ Avg Session Time (seconds)", min_value=0.0, max_value=10000.0, value=120.5, step=10.0)
+    
+    with col2:
+        purchase_freq = st.slider("🛒 Purchase Frequency", min_value=0.0, max_value=1.0, value=0.3, step=0.01)
+        products_viewed = st.number_input("👁️ Products Viewed", min_value=0, max_value=1000, value=5, step=1)
+        price_range = st.number_input("💵 Price Range", min_value=0.0, max_value=100000.0, value=50.0, step=10.0)
+        session_duration = st.number_input("⏳ Session Duration (seconds)", min_value=0.0, max_value=10000.0, value=300.0, step=10.0)
+    
+    with col3:
+        recency = st.number_input("📆 Recency (days)", min_value=0, max_value=1000, value=10, step=1)
+        frequency = st.number_input("🔄 Frequency", min_value=0, max_value=1000, value=3, step=1)
+        monetary = st.number_input("💸 Monetary Value", min_value=0.0, max_value=1000000.0, value=500.0, step=50.0)
+        main_category = st.text_input("📦 Main Category", value="electronics")
+        rfm_segment = st.slider("🎯 RFM Segment", min_value=0, max_value=3, value=2)
+    
+    if st.button("🔮 Predict", key="predict_single"):
+        try:
+            # Validate input using PredictionRequest schema
+            from pydantic import ValidationError
+            request_data = PredictionRequest(
+                price=price,
+                hour=hour,
+                is_weekend=is_weekend,
+                total_clicks=total_clicks,
+                avg_session_time=avg_session_time,
+                purchase_freq=purchase_freq,
+                products_viewed=products_viewed,
+                price_range=price_range,
+                session_duration=session_duration,
+                recency=recency,
+                frequency=frequency,
+                monetary=monetary,
+                main_category=main_category,
+                rfm_segment=rfm_segment
+            )
+            
+            # Convert to DataFrame for prediction
+            input_data = pd.DataFrame([request_data.model_dump()])
+            
+            # Get features from session state
+            features = st.session_state["features"]
+            input_data = input_data[features]
+            
+            # Make prediction
+            model = st.session_state["model"]
+            probability = float(model.predict_proba(input_data)[0, 1])  # Convert to Python float
+            threshold = st.session_state.get("optimal_threshold", 0.5)
+            prediction = int(probability >= threshold)
+            
+            # Calculate confidence
+            if probability < 0.3 or probability > 0.7:
+                confidence = "High"
+                confidence_color = "green"
+            elif probability < 0.4 or probability > 0.6:
+                confidence = "Medium"
+                confidence_color = "orange"
+            else:
+                confidence = "Low"
+                confidence_color = "red"
+            
+            # Display results
+            st.markdown("---")
+            st.markdown("### 📊 Prediction Results")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🎯 Prediction", "Target Customer" if prediction == 1 else "Non-Target")
+            with col2:
+                st.metric("📈 Probability", f"{probability:.2%}")
+            with col3:
+                st.metric("🎚️ Threshold", f"{threshold:.3f}")
+            with col4:
+                st.markdown(f"**Confidence:** ::{confidence_color}[{confidence}]")
+            
+            # Progress bar for probability
+            st.markdown("#### Conversion Probability")
+            st.progress(probability)
+            
+            if prediction == 1:
+                st.success("✅ This customer is likely to convert! Consider targeted marketing.")
+            else:
+                st.info("ℹ️ This customer is less likely to convert. May need engagement strategies.")
+                
+        except ValidationError as ve:
+            st.error("❌ Input validation failed:")
+            for error in ve.errors():
+                st.error(f"  • {error['loc'][0]}: {error['msg']}")
+        except Exception as e:
+            st.error(f"❌ Prediction failed: {str(e)}")
 
 
 if __name__ == "__main__":

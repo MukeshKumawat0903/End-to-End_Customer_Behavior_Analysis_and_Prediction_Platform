@@ -1,33 +1,47 @@
 # Core Data Processing
-pandas
-numpy
-scipy
+pandas>=1.5.0
+numpy>=1.23.0
+scipy>=1.9.0
 
 # Machine Learning
-scikit-learn
-xgboost
-imbalanced-learn
-shap
+scikit-learn>=1.2.0
+xgboost>=1.7.0
+imbalanced-learn>=0.10.0
+shap>=0.42.0
+lightgbm>=3.3.0
 
 # API & Deployment
-joblib
+joblib>=1.2.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+
+# Configuration & Validation
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# MLflow & Experiment Tracking
+mlflow>=2.8.0
 
 # Monitoring & Logging
-prometheus-client
-grafana-client
-python-dotenv
+prometheus-client>=0.15.0
 
 # Utilities & Visualization
-matplotlib
-seaborn
-plotly
-tqdm
-jupyter
+matplotlib>=3.6.0
+seaborn>=0.12.0
+plotly>=5.14.0
+tqdm>=4.64.0
+jupyter>=1.0.0
 
-# Optional (Uncomment if needed)
-streamlit     # For dashboarding
+# Dashboard
+streamlit>=1.28.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
 
 # Other
-memory_profiler
-lightgbm
-duckdb
+memory_profiler>=0.61.0
+duckdb>=0.9.0
